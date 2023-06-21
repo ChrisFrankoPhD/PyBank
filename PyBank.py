@@ -17,22 +17,6 @@ class Bank():
     def get_accounts(self):
         return self._accounts
 
-def get_error(err_id, amount):
-    if err_id == 'nan':
-        print(f'{Fore.RED}\nERROR: {amount} is not a valid number')
-        print(Style.RESET_ALL)
-    elif err_id == 'neg':
-        print(f'{Fore.RED}\nERROR: Value can not be negative')
-        print(Style.RESET_ALL)
-    elif err_id == 'dec':
-        print(f'{Fore.RED}\nERROR: Value must have a maximum of two decimal places')
-        print(Style.RESET_ALL)
-    elif err_id == 'ins':
-        print(f'{Fore.RED}\nERROR: {amount} is greater than your current balance')
-        print(Style.RESET_ALL)
-    else:
-        print(f'{Fore.RED}\nERROR: Unknown error occurred, please try again')
-        print(Style.RESET_ALL)
 # class Bank():
 #     self._users = {}
 #     self._accountIDs = {}
@@ -47,6 +31,7 @@ class Log_File():
             print(f'{Fore.RED}\nfile with name "{self._name}" already exists')
             print('\nPlease delete files from previous session before continuing')
             print(Style.RESET_ALL)
+            quit()
 
     def append(self, content):
         with open(f"logFiles/{self._name}", "a") as log:
@@ -59,12 +44,6 @@ class Log_File():
     def get_lines(self):
         with open(f"logFiles/{self._name}", "r") as log:
             return log.readlines()
-        
-
-# file = Log_File('pybank_test1')
-# file.append('made in pybank')
-# file.read()
-# print(file.get_lines())
 
 class Account():
     def __init__(self, name, num, owner=None):
@@ -126,22 +105,81 @@ class Account():
             self._balance -= float(amount)
             return (0, format(self._balance, ".2f"))
     
+def get_error(err_id, amount):
+    if err_id == 'nan':
+        print(f'{Fore.RED}\nERROR: {amount} is not a valid number')
+        print(Style.RESET_ALL)
+    elif err_id == 'neg':
+        print(f'{Fore.RED}\nERROR: Value can not be negative')
+        print(Style.RESET_ALL)
+    elif err_id == 'dec':
+        print(f'{Fore.RED}\nERROR: Value must have a maximum of two decimal places')
+        print(Style.RESET_ALL)
+    elif err_id == 'ins':
+        print(f'{Fore.RED}\nERROR: {amount} is greater than your current balance')
+        print(Style.RESET_ALL)
+    else:
+        print(f'{Fore.RED}\nERROR: Unknown error occurred, please try again')
+        print(Style.RESET_ALL)
 
+def choose_account(account_lst, display_str):
+    while True:
+        choice = input(display_str).strip()
+        try:
+            int(choice)
+            if int(choice) < 1:
+                raise Exception
+            if not account_lst[int(choice) - 1]:
+                raise Exception
+        except:
+            print(f'{Fore.RED}\nInput must be the list number of one of your accounts')
+            print(Style.RESET_ALL)
+            continue
+        else:
+            return account_lst[int(choice) - 1]
 
-# testAccount = Account('AAA-001', '000-000-001')
-# while True:
-#     test_num = input("deposit money: ")
-#     if test_num == 'w':
-#         test_num = input("withdraw money: ")
-#         print(testAccount.withdraw(test_num))
-#         print(testAccount.get_balance())
-#         continue
-#     print(testAccount.deposit(test_num))
-#     print(testAccount.get_balance())
-#     continue
+def deposit_flow(account):
+    while True:
+        amount = input(f'\n{Fore.CYAN}Deposit\n\n{Style.RESET_ALL}Enter deposit amount or {Fore.CYAN}"Q"{Style.RESET_ALL} to cancel: ')
+        if amount == 'q':
+            break
+        confirm = input(f'Deposit "${amount}"? (Y / N): ').lower().strip()
+        if confirm == 'n':
+            continue
+        elif confirm == 'y':
+            code = account.deposit(amount)
+            # print (code)
+            if code[0]:
+                get_error(code[1], amount)
+                continue
+            else:
+                account._log.append(f'deposit: {amount}, {account.get_balance()}')
+                print (f'{Fore.GREEN}You have deposited {Fore.YELLOW}"${format(float(amount), ".2f")}"{Fore.GREEN}, your new balance is {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}')  
+            break
+        else: 
+            continue
 
+def withdraw_flow(account):
+    while True:
+        amount = input(f'\n{Fore.CYAN}Withdraw\n\n\t{Style.RESET_ALL}Current Balance = {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}\n\nEnter withdraw amount or {Fore.CYAN}"Q"{Style.RESET_ALL} to cancel: ')
+        if amount == 'q':
+            break
+        confirm = input(f'Withdaw "${amount}"? {Fore.CYAN}(Y / N){Style.RESET_ALL}: ').lower().strip()
+        if confirm == 'n':
+            continue
+        elif confirm == 'y':
+            code = account.withdraw(amount)
+            # print (code)
+            if code[0]:
+                get_error(code[1], amount)
+                continue
+            else:
+                account._log.append(f'("withdraw", {amount}, {account.get_balance()})')
+                print (f'{Fore.GREEN}You have withdrawn {Fore.YELLOW}"${format(float(amount), ".2f")}"{Fore.GREEN}, your new balance is {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}')
+            break
+        else: 
+            continue
 
-print('working?')
 def app():
     while True:
         account = None
@@ -171,28 +209,14 @@ def app():
                     continue
                 account_lst = []
                 counter = 1
-                display = f'Please Choose an Account {Fore.YELLOW}(Account Name, Account ID, Balance){Style.RESET_ALL}:\n\n'
+                display_str = f'Please Choose an Account {Fore.YELLOW}(Account Name, Account ID, Balance){Style.RESET_ALL}:\n\n'
                 for id_num, acc in pybank.get_accounts().items():
-                    display += f'\t{Fore.CYAN}{counter}{Style.RESET_ALL} - {Fore.YELLOW}{acc.get_name()}{Style.RESET_ALL}, {Fore.YELLOW}{id_num}{Style.RESET_ALL}, {Fore.YELLOW}${acc.get_balance()}\n{Style.RESET_ALL}'
+                    display_str += f'\t{Fore.CYAN}{counter}{Style.RESET_ALL} - {Fore.YELLOW}{acc.get_name()}{Style.RESET_ALL}, {Fore.YELLOW}{id_num}{Style.RESET_ALL}, {Fore.YELLOW}${acc.get_balance()}\n{Style.RESET_ALL}'
                     counter += 1
                     account_lst.append(acc)
-                display += f'\t{Fore.CYAN}Q{Style.RESET_ALL} - Cancel\n'
-                display += '\nEnter Number: '
-                while True:
-                    choice = input(display).strip()
-                    try:
-                        int(choice)
-                        if int(choice) < 1:
-                            raise Exception
-                        if not account_lst[int(choice) - 1]:
-                            raise Exception
-                    except:
-                        print(f'{Fore.RED}\nInput must be the list number of one of your accounts')
-                        print(Style.RESET_ALL)
-                        continue
-                    else:
-                        account = account_lst[int(choice) - 1]
-                        break
+                display_str += f'\t{Fore.CYAN}Q{Style.RESET_ALL} - Cancel\n'
+                display_str += '\nEnter Number: '
+                account = choose_account(account_lst, display_str)
                 break
             else:
                 print(f'{Fore.RED}\n{option} is not a valid option, please try again')
@@ -201,63 +225,33 @@ def app():
         while True:
             print(f'\n{Fore.GREEN}Current Account\n\t{Style.RESET_ALL}Name: {Fore.YELLOW}{account.get_name()}\n\t{Style.RESET_ALL}ID: {Fore.YELLOW}{account.get_number()}\n\t{Style.RESET_ALL}Balance: {Fore.YELLOW}${account.get_balance()}')
             option = input(f'\nPlease enter one of the following commands:\n\n\t{Fore.CYAN}W{Style.RESET_ALL} - withdraw\n\t{Fore.CYAN}D{Style.RESET_ALL} - deposit\n\t{Fore.CYAN}V{Style.RESET_ALL} - View Previous Transactions\n\t{Fore.CYAN}Q{Style.RESET_ALL} - Back to Account Selection"\n\nInput: ').lower().strip()
+
             if option == 'q':
                 break
+
             elif option == 'v':
                 if len(account.get_transactions()) == 0:
                     print(f'\n{Fore.RED}This account has made no transactions yet\n')
                     print (Style.RESET_ALL)
                     continue
-                display = f'{Fore.GREEN}Transaction History (Type: Amount, New Balance){Style.RESET_ALL}\n\n'
+                display_str = f'{Fore.GREEN}Transaction History (Type: Amount, New Balance){Style.RESET_ALL}\n\n'
                 for transaction in account.get_transactions():
-                    display += f'\t{transaction[0].capitalize()}: {Fore.CYAN}${transaction[1]}{Style.RESET_ALL}, {Fore.YELLOW}${transaction[2]}{Style.RESET_ALL}\n'
-                display += f'\n{Fore.RED}End of Transaction Record{Style.RESET_ALL}'
-                print(display)
+                    display_str += f'\t{transaction[0].capitalize()}: {Fore.CYAN}${transaction[1]}{Style.RESET_ALL}, {Fore.YELLOW}${transaction[2]}{Style.RESET_ALL}\n'
+                display_str += f'\n{Fore.RED}End of Transaction Record{Style.RESET_ALL}'
+                print(display_str)
                 continue
-            elif option == 'd':  
-                while True:
-                    amount = input(f'\n{Fore.CYAN}Deposit\n\n{Style.RESET_ALL}Enter deposit amount or {Fore.CYAN}"Q"{Style.RESET_ALL} to cancel: ')
-                    if amount == 'q':
-                        break
-                    confirm = input(f'Deposit "${amount}"? (Y / N): ').lower().strip()
-                    if confirm == 'n':
-                        continue
-                    elif confirm == 'y':
-                        code = account.deposit(amount)
-                        # print (code)
-                        if code[0]:
-                            get_error(code[1], amount)
-                            continue
-                        else:
-                            account._log.append(f'deposit: {amount}, {account.get_balance()}')
-                            print (f'{Fore.GREEN}You have deposited {Fore.YELLOW}"${format(float(amount), ".2f")}"{Fore.GREEN}, your new balance is {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}')  
-                        break
-                    else: 
-                        continue
+
+            elif option == 'd':
+                deposit_flow(account) 
+
             elif option == 'w':
-                while True:
-                    amount = input(f'\n{Fore.CYAN}Withdraw\n\n\t{Style.RESET_ALL}Current Balance = {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}\n\nEnter withdraw amount or {Fore.CYAN}"Q"{Style.RESET_ALL} to cancel: ')
-                    if amount == 'q':
-                        break
-                    confirm = input(f'Withdaw "${amount}"? {Fore.CYAN}(Y / N){Style.RESET_ALL}: ').lower().strip()
-                    if confirm == 'n':
-                        continue
-                    elif confirm == 'y':
-                        code = account.withdraw(amount)
-                        # print (code)
-                        if code[0]:
-                            get_error(code[1], amount)
-                            continue
-                        else:
-                            account._log.append(f'("withdraw", {amount}, {account.get_balance()})')
-                            print (f'{Fore.GREEN}You have withdrawn {Fore.YELLOW}"${format(float(amount), ".2f")}"{Fore.GREEN}, your new balance is {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}')
-                        break
-                    else: 
-                        continue
+                withdraw_flow(account)
+
             else:
                 print(f'{Fore.RED}\n{option} is not a valid option, please try again')
                 print(Style.RESET_ALL)
                 continue
+
             more = input(f'\nWould you like to make another transaction? {Fore.CYAN}(Y / N){Style.RESET_ALL}: ').lower().strip()
             if more == 'n':
                 break
