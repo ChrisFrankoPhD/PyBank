@@ -54,7 +54,7 @@ class Account():
         self._transactions = []
         self._log = Log_File(f"log{num}")
 
-        self._log.append(f'Account ID: {self._number}\nAccount Name: {self._name}\nCustomer: {self._owner}')
+        self._log.append(f'Account ID: {self._number}\nAccount Name: {self._name}\nCustomer: {self._owner}\n\nTransactions:')
 
     def get_number(self):
         return self._number
@@ -124,7 +124,9 @@ def get_error(err_id, amount):
 
 def choose_account(account_lst, display_str):
     while True:
-        choice = input(display_str).strip()
+        choice = input(display_str).strip().lower()
+        if choice == 'q':
+            return
         try:
             int(choice)
             if int(choice) < 1:
@@ -174,89 +176,96 @@ def withdraw_flow(account):
                 get_error(code[1], amount)
                 continue
             else:
-                account._log.append(f'("withdraw", {amount}, {account.get_balance()})')
+                account._log.append(f'withdraw: {amount}, {account.get_balance()}')
                 print (f'{Fore.GREEN}You have withdrawn {Fore.YELLOW}"${format(float(amount), ".2f")}"{Fore.GREEN}, your new balance is {Fore.YELLOW}"${account.get_balance()}"{Style.RESET_ALL}')
             break
         else: 
             continue
 
-def app():
+def account_flow():
     while True:
-        account = None
-        while True:
-            option = input(f'\nWelcome to PyBank, please enter one of the following commands:\n\n\t{Fore.CYAN}A{Style.RESET_ALL} - Create New Account\n\t{Fore.CYAN}S{Style.RESET_ALL} - Select Account\n\t{Fore.CYAN}Q{Style.RESET_ALL} - Quit"\n\nInput: ').lower().strip()
-            if option == 'q':
-                print(f'{Fore.RED}Goodbye')
+        option = input(f'\nWelcome to PyBank, please enter one of the following commands:\n\n\t{Fore.CYAN}A{Style.RESET_ALL} - Create New Account\n\t{Fore.CYAN}S{Style.RESET_ALL} - Select Account\n\t{Fore.CYAN}Q{Style.RESET_ALL} - Quit"\n\nInput: ').lower().strip()
+        if option == 'q':
+            print(f'{Fore.RED}Goodbye')
+            print(Style.RESET_ALL)
+            quit()
+        elif option == 'a':
+            account_name = input(f'Please enter a name for your account, or {Fore.CYAN}"Q"{Style.RESET_ALL} to cancel: ').strip()
+            if account_name == 'q' or account_name == 'Q':
+                continue
+            pybank.iterate_id()
+            id_str = f'{pybank.get_id():06d}'
+            account_ID = f'{id_str[:3]}-{id_str[3:]}'
+            new_account = Account(account_name, account_ID)
+            pybank.add_account(new_account)
+            # ACCOUNTS[new_account.get_number()] = new_account
+            print (f'{Fore.GREEN}\nNew Account Created! Details:\n\t{Style.RESET_ALL}Account Name: {Fore.YELLOW}{new_account.get_name()}\n\t{Style.RESET_ALL}Account ID: {Fore.YELLOW}{new_account.get_number()}')
+            print (Style.RESET_ALL)
+            continue
+        elif option == 's':
+            if len(pybank.get_accounts()) == 0:
+                print(f'{Fore.RED}\nYou have created no accounts yet, please create an account first')
                 print(Style.RESET_ALL)
-                return
-            elif option == 'a':
-                account_name = input(f'Please enter a name for your account, or {Fore.CYAN}"Q"{Style.RESET_ALL} to cancel: ').strip()
-                if account_name == 'q' or account_name == 'Q':
-                    continue
-                pybank.iterate_id()
-                id_str = f'{pybank.get_id():06d}'
-                account_ID = f'{id_str[:3]}-{id_str[3:]}'
-                new_account = Account(account_name, account_ID)
-                pybank.add_account(new_account)
-                # ACCOUNTS[new_account.get_number()] = new_account
-                print (f'{Fore.GREEN}\nNew Account Created! Details:\n\t{Style.RESET_ALL}Account Name: {Fore.YELLOW}{new_account.get_name()}\n\t{Style.RESET_ALL}Account ID: {Fore.YELLOW}{new_account.get_number()}')
+                continue
+            account_lst = []
+            counter = 1
+            display_str = f'Please Choose an Account {Fore.YELLOW}(Account Name, Account ID, Balance){Style.RESET_ALL}:\n\n'
+            for id_num, acc in pybank.get_accounts().items():
+                display_str += f'\t{Fore.CYAN}{counter}{Style.RESET_ALL} - {Fore.YELLOW}{acc.get_name()}{Style.RESET_ALL}, {Fore.YELLOW}{id_num}{Style.RESET_ALL}, {Fore.YELLOW}${acc.get_balance()}\n{Style.RESET_ALL}'
+                counter += 1
+                account_lst.append(acc)
+            display_str += f'\t{Fore.CYAN}Q{Style.RESET_ALL} - Cancel\n'
+            display_str += '\nEnter Number: '
+            account = choose_account(account_lst, display_str)
+            if not account:
+                continue
+            return account
+        else:
+            print(f'{Fore.RED}\n{option} is not a valid option, please try again')
+            print(Style.RESET_ALL)
+            continue
+
+def transaction_flow(account):
+    while True:
+        print(f'\n{Fore.GREEN}Current Account\n\t{Style.RESET_ALL}Name: {Fore.YELLOW}{account.get_name()}\n\t{Style.RESET_ALL}ID: {Fore.YELLOW}{account.get_number()}\n\t{Style.RESET_ALL}Balance: {Fore.YELLOW}${account.get_balance()}')
+        option = input(f'\nPlease enter one of the following commands:\n\n\t{Fore.CYAN}W{Style.RESET_ALL} - withdraw\n\t{Fore.CYAN}D{Style.RESET_ALL} - deposit\n\t{Fore.CYAN}V{Style.RESET_ALL} - View Previous Transactions\n\t{Fore.CYAN}Q{Style.RESET_ALL} - Back to Account Selection"\n\nInput: ').lower().strip()
+
+        if option == 'q':
+            break
+
+        elif option == 'v':
+            if len(account.get_transactions()) == 0:
+                print(f'\n{Fore.RED}This account has made no transactions yet\n')
                 print (Style.RESET_ALL)
                 continue
-            elif option == 's':
-                if len(pybank.get_accounts()) == 0:
-                    print(f'{Fore.RED}\nYou have created no accounts yet, please create an account first')
-                    print(Style.RESET_ALL)
-                    continue
-                account_lst = []
-                counter = 1
-                display_str = f'Please Choose an Account {Fore.YELLOW}(Account Name, Account ID, Balance){Style.RESET_ALL}:\n\n'
-                for id_num, acc in pybank.get_accounts().items():
-                    display_str += f'\t{Fore.CYAN}{counter}{Style.RESET_ALL} - {Fore.YELLOW}{acc.get_name()}{Style.RESET_ALL}, {Fore.YELLOW}{id_num}{Style.RESET_ALL}, {Fore.YELLOW}${acc.get_balance()}\n{Style.RESET_ALL}'
-                    counter += 1
-                    account_lst.append(acc)
-                display_str += f'\t{Fore.CYAN}Q{Style.RESET_ALL} - Cancel\n'
-                display_str += '\nEnter Number: '
-                account = choose_account(account_lst, display_str)
-                break
-            else:
-                print(f'{Fore.RED}\n{option} is not a valid option, please try again')
-                print(Style.RESET_ALL)
-                continue
-        while True:
-            print(f'\n{Fore.GREEN}Current Account\n\t{Style.RESET_ALL}Name: {Fore.YELLOW}{account.get_name()}\n\t{Style.RESET_ALL}ID: {Fore.YELLOW}{account.get_number()}\n\t{Style.RESET_ALL}Balance: {Fore.YELLOW}${account.get_balance()}')
-            option = input(f'\nPlease enter one of the following commands:\n\n\t{Fore.CYAN}W{Style.RESET_ALL} - withdraw\n\t{Fore.CYAN}D{Style.RESET_ALL} - deposit\n\t{Fore.CYAN}V{Style.RESET_ALL} - View Previous Transactions\n\t{Fore.CYAN}Q{Style.RESET_ALL} - Back to Account Selection"\n\nInput: ').lower().strip()
+            display_str = f'{Fore.GREEN}Transaction History (Type: Amount, New Balance){Style.RESET_ALL}\n\n'
+            for transaction in account.get_transactions():
+                display_str += f'\t{transaction[0].capitalize()}: {Fore.CYAN}${transaction[1]}{Style.RESET_ALL}, {Fore.YELLOW}${transaction[2]}{Style.RESET_ALL}\n'
+            display_str += f'\n{Fore.RED}End of Transaction Record{Style.RESET_ALL}'
+            print(display_str)
+            continue
 
-            if option == 'q':
-                break
+        elif option == 'd':
+            deposit_flow(account) 
 
-            elif option == 'v':
-                if len(account.get_transactions()) == 0:
-                    print(f'\n{Fore.RED}This account has made no transactions yet\n')
-                    print (Style.RESET_ALL)
-                    continue
-                display_str = f'{Fore.GREEN}Transaction History (Type: Amount, New Balance){Style.RESET_ALL}\n\n'
-                for transaction in account.get_transactions():
-                    display_str += f'\t{transaction[0].capitalize()}: {Fore.CYAN}${transaction[1]}{Style.RESET_ALL}, {Fore.YELLOW}${transaction[2]}{Style.RESET_ALL}\n'
-                display_str += f'\n{Fore.RED}End of Transaction Record{Style.RESET_ALL}'
-                print(display_str)
-                continue
+        elif option == 'w':
+            withdraw_flow(account)
 
-            elif option == 'd':
-                deposit_flow(account) 
+        else:
+            print(f'{Fore.RED}\n{option} is not a valid option, please try again')
+            print(Style.RESET_ALL)
+            continue
 
-            elif option == 'w':
-                withdraw_flow(account)
+        more = input(f'\nWould you like to make another transaction? {Fore.CYAN}(Y / N){Style.RESET_ALL}: ').lower().strip()
+        if more == 'n':
+            break
+        else:
+            continue
 
-            else:
-                print(f'{Fore.RED}\n{option} is not a valid option, please try again')
-                print(Style.RESET_ALL)
-                continue
-
-            more = input(f'\nWould you like to make another transaction? {Fore.CYAN}(Y / N){Style.RESET_ALL}: ').lower().strip()
-            if more == 'n':
-                break
-            else:
-                continue
+def app():
+    while True:
+        account = account_flow()
+        transaction_flow(account)
 
 pybank = Bank()
 app()
