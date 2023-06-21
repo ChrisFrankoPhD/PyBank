@@ -1,6 +1,13 @@
 # Import for command line styling
 from colorama import Fore, Style
+import os
 
+# delete the files from the session before closing, otherwise hosted demo has conflicts when making files
+def log_purge_quit():
+    for account in pybank.get_accounts().values():
+        file_name = account.get_log().get_name()
+        os.remove(f"logFiles/{file_name}")
+    quit()
 
 class Bank():
     '''
@@ -37,9 +44,9 @@ class Log_File():
                 pass
         except FileExistsError:
             print(f'{Fore.RED}\nfile with name "{self._name}" already exists')
-            print('\nPlease delete files from previous session before continuing')
+            print('\nFile managment error, please delete all files in "logFiles" dir (except "dummy") from previous session before continuing')
             print(Style.RESET_ALL)
-            quit()
+            log_purge_quit()
 
     def append(self, content):
         with open(f"logFiles/{self._name}", "a") as log:
@@ -52,6 +59,9 @@ class Log_File():
     def get_lines(self):
         with open(f"logFiles/{self._name}", "r") as log:
             return log.readlines()
+    
+    def get_name(self):
+        return self._name
 
 class Account():
     '''
@@ -82,6 +92,9 @@ class Account():
 
     def get_transactions(self):
         return self._transactions
+    
+    def get_log(self):
+        return self._log
 
     # both the deposit and withdraw methods return error "codes" if there is an issue with the string passed for amount, the workflow then calls an error function based on these codes
     def deposit(self, amount):
@@ -255,7 +268,7 @@ def app():
             if option == 'q':
                 print(f'{Fore.RED}Goodbye')
                 print(Style.RESET_ALL)
-                quit()
+                log_purge_quit()
             
             # account creation flow
             elif option == 'a':
@@ -371,9 +384,13 @@ def app():
             else:
                 continue
 
+
 # create the main Bank object that holds "global" info, and start the banking app
 pybank = Bank()
 app()
+
+# delete log files created during execution
+log_purge_quit()
 
 # reset command ine styling
 print(Style.RESET_ALL)
